@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const { addUser, getUsersInRoom } = require('./utils/users');
+const { generateMessage } = require('./utils/messages');
 
 const app = express();  // create an express app
 
@@ -12,13 +14,36 @@ const publicDirectoryPath = '../public';
 app.use(express.static(path.join(__dirname, publicDirectoryPath)));
 
 io.on('connection', (socket => {
-    console.log(socket.id);
+    console.log(`socket id: `, socket.id);
 
-    socket.on('join', () => {});
+    socket.on('join', (options, callback) => {
+        console.log('options, callback',options, callback);
+        const { error, user } = addUser({ id: socket.id, ...options })
+
+        if (error) {
+            return callback(error)
+        }
+
+        // Adds the socket to the given room or to the list of rooms.
+        // https://socket.io/docs/v4/server-api/#socketjoinroom
+        socket.join(user.room)
+
+        socket.emit('message', generateMessage('Admin', `Welcome to ${user.room} !`))
+        socket.broadcast.to(user.room).emit('message', generateMessage(`${user.username} entered the room.`))
+
+        io.to(user.room).emit('roomData', {
+            room: user.room,
+            users: getUsersInRoom(user.room)
+        })
+
+        callback();
+    })
 
     socket.on('sendMessage', () => {});
 
-    socket.on('discounnect', () => {});
+    socket.on('discounnect', () => {
+
+    });
 }))
 
 const port = 4000;
