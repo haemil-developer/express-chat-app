@@ -1,11 +1,17 @@
-const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 7071 });
+const http = require('http').createServer();
+const io = require('socket.io')(http, {
+    cors: { origin: "*" }   // origin 이 달라도 사용할 수 있도록 설정
+})
 
-wss.on('connection', (ws) => {
-    ws.send('connected');
+io.on('connection', (socket) => {
+    console.log('a user connected');
 
-    ws.on('message', (messageFromClient) => {
-        const message = JSON.parse(messageFromClient);
-        console.log(message);
+    socket.on('message', (message) => {
+        io.emit('message', `${socket.id.substr(0,2)} said ${message}`)
     })
+})
+
+const port = 8080;
+http.listen(port, () => {
+    console.log(`${port} port 에서 서버 실행`);
 })
