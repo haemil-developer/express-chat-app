@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const { addUser, getUsersInRoom } = require('./utils/users');
+const { addUser, getUsersInRoom, getUser } = require('./utils/users');
 const { generateMessage } = require('./utils/messages');
 
 const app = express();  // create an express app
@@ -39,7 +39,11 @@ io.on('connection', (socket => {
         callback();
     })
 
-    socket.on('sendMessage', () => {});
+    socket.on('sendMessage', (message, callback) => {
+        const user = getUser(socket.id)
+        io.to(user.room).emit('message', generateMessage(user.username, message))
+        callback();
+    })
 
     socket.on('discounnect', () => {
 
